@@ -1,36 +1,51 @@
-const API_BASE = "http://localhost:5000"; // backend server
+// app.js
 
-// ----------- AUTH UTILS -----------
+const API_BASE = "http://localhost:5000/api"; // change if backend runs elsewhere
+
+// ------------------ AUTH HELPERS ------------------
 function getToken() {
   return localStorage.getItem("token");
 }
-function setToken(t) {
-  localStorage.setItem("token", t);
+function setToken(token) {
+  localStorage.setItem("token", token);
 }
 function clearToken() {
   localStorage.removeItem("token");
+  localStorage.removeItem("user");
+}
+function getUser() {
+  try {
+    return JSON.parse(localStorage.getItem("user"));
+  } catch {
+    return null;
+  }
+}
+function setUser(user) {
+  localStorage.setItem("user", JSON.stringify(user));
 }
 
-// ----------- NAVBAR UPDATE -----------
+// ------------------ PAGE DETECTION ------------------
 document.addEventListener("DOMContentLoaded", () => {
-  const navAuth = document.getElementById("nav-auth");
-  const navUser = document.getElementById("navUser");
-  const logoutBtn = document.getElementById("logoutBtn");
+  const path = window.location.pathname;
 
-  if (navAuth && getToken()) {
-    navAuth.textContent = "Dashboard";
-    navAuth.href = "dashboard.html";
+  if (path.endsWith("index.html") || path === "/" || path === "") {
+    loadDoctors();
   }
-  if (navUser && getToken()) {
-    fetch(`${API_BASE}/auth/me`, {
-      headers: { Authorization: "Bearer " + getToken() }
-    })
-      .then(res => res.json())
-      .then(user => {
-        navUser.textContent = `Hello, ${user.firstName}`;
-      })
-      .catch(() => {});
+  if (path.endsWith("login.html")) {
+    initLogin();
   }
+  if (path.endsWith("register.html")) {
+    initRegister();
+  }
+  if (path.endsWith("dashboard.html")) {
+    loadDashboard();
+  }
+  if (path.endsWith("book.html")) {
+    initBooking();
+  }
+
+  // logout handler
+  const logoutBtn = document.getElementById("logoutBtn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
       clearToken();
@@ -39,13 +54,60 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// ----------- LOGIN -----------
-const loginForm = document.getElementById("loginForm");
-if (loginForm) {
-  loginForm.addEventListener("submit", async e => {
+// ------------------ INDEX PAGE ------------------
+async function loadDoctors() {
+  const doctorsDiv = document.getElementById("doctors");
+  if (!doctorsDiv) return;
+
+  const specialization = document.getElementById("filter-specialization")?.value || "";
+  const location = document.getElementById("filter-location")?.value || "";
+
+  let url = `${API_BASE}/doctor/list?specialization=${encodeURIComponent(specialization)}&location=${encodeURIComponent(location)}`;
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    doctorsDiv.innerHTML = "";
+
+    data.forEach(doc => {
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = `
+        <h3>Dr. ${doc.firstName} ${doc.lastName}</h3>
+        <p><b>Specialization:</b> ${doc.specialization || "General"}</p>
+        <p><b>Location:</b> ${doc.district}, ${doc.state}</p>
+        <p><b>Online Fee:</b> ₹${doc.feesTeleconsult || "-"}</p>
+        <p><b>Visit Fee:</b> ₹${doc.feesVisit || "-"}</p>
+        <button onclick="bookDoctor('${doc._id}')">Book</button>
+      `;
+      doctorsDiv.appendChild(div);
+    });
+  } catch (err) {
+    console.error("Error loading doctors:", err);
+  }
+
+  document.getElementById("searchBtn")?.addEventListener("click", loadDoctors);
+  document.getElementById("clearBtn")?.addEventListener("click", () => {
+    document.getElementById("filter-specialization").value = "";
+    document.getElementById("filter-location").value = "";
+    loadDoctors();
+  });
+}
+
+function bookDoctor(doctorId) {
+  window.location.href = `book.html?doctorId=${doctorId}`;
+}
+
+// ------------------ LOGIN ------------------
+function initLogin() {
+  const form = document.getElementById("loginForm");
+  const errorEl = document.getElementById("error");
+
+  form.addEventListener("submit", async e => {
     e.preventDefault();
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
+
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
@@ -53,24 +115,33 @@ if (loginForm) {
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
+
       if (res.ok) {
         setToken(data.token);
+        setUser(data.user);
         window.location.href = "dashboard.html";
       } else {
-        document.getElementById("error").textContent = data.message;
+        errorEl.textContent = data.message || "Login failed";
       }
-    } catch {
-      document.getElementById("error").textContent = "Server error";
+    } catch (err) {
+      errorEl.textContent = "Error connecting to server";
     }
   });
 }
 
-// ----------- REGISTER -----------
-const registerForm = document.getElementById("registerForm");
-if (registerForm) {
-  registerForm.addEventListener("submit", async e => {
+// ------------------ REGISTER ------------------
+function initRegister() {
+  const form = document.getElementById("registerForm");
+  const roleSelect = document.getElementById("role");
+  const doctorExtra = document.getElementById("doctorExtra");
+
+  roleSelect.addEventListener("change", () => {
+    doctorExtra.style.display = roleSelect.value === "Doctor" ? "block" : "none";
+  });
+
+  form.addEventListener("submit", async e => {
     e.preventDefault();
-    const payload = {
+    const body = {
       firstName: document.getElementById("firstName").value,
       lastName: document.getElementById("lastName").value,
       village: document.getElementById("village").value,
@@ -80,196 +151,165 @@ if (registerForm) {
       mobile: document.getElementById("mobile").value,
       email: document.getElementById("email").value,
       password: document.getElementById("password").value,
-      role: document.getElementById("role").value,
-      specialization: document.getElementById("specialization")?.value,
-      feesTeleconsult: document.getElementById("feesTeleconsult")?.value,
-      feesVisit: document.getElementById("feesVisit")?.value
+      role: roleSelect.value
     };
+
+    if (roleSelect.value === "Doctor") {
+      body.specialization = document.getElementById("specialization").value;
+      body.feesTeleconsult = document.getElementById("feesTeleconsult").value;
+      body.feesVisit = document.getElementById("feesVisit").value;
+    }
+
     try {
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(body)
       });
       const data = await res.json();
+
       if (res.ok) {
-        setToken(data.token);
-        window.location.href = "dashboard.html";
+        alert("Registration successful! Please login.");
+        window.location.href = "login.html";
       } else {
-        alert(data.message);
+        alert(data.message || "Registration failed");
       }
-    } catch {
-      alert("Server error");
+    } catch (err) {
+      alert("Error connecting to server");
     }
   });
-
-  const roleSelect = document.getElementById("role");
-  const doctorExtra = document.getElementById("doctorExtra");
-  if (roleSelect && doctorExtra) {
-    roleSelect.addEventListener("change", () => {
-      doctorExtra.style.display =
-        roleSelect.value === "Doctor" ? "block" : "none";
-    });
-  }
 }
 
-// ----------- INDEX: SHOW DOCTORS -----------
-if (document.getElementById("doctors")) {
-  async function loadDoctors() {
-    const res = await fetch(`${API_BASE}/doctor/list`);
-    const docs = await res.json();
-    const container = document.getElementById("doctors");
-    container.innerHTML = "";
-    docs.forEach(doc => {
-      const div = document.createElement("div");
-      div.className = "card";
-      div.innerHTML = `
-        <h3>${doc.firstName} ${doc.lastName}</h3>
-        <p>${doc.specialization || "General"}</p>
-        <p>${doc.district}, ${doc.state}</p>
-        <p>Tele: ₹${doc.feesTeleconsult || "-"}, Visit: ₹${doc.feesVisit || "-"}</p>
-        <button onclick="bookDoctor('${doc._id}')">Book</button>
-      `;
-      container.appendChild(div);
-    });
-  }
-  loadDoctors();
-
-  document.getElementById("searchBtn").onclick = loadDoctors;
-  document.getElementById("clearBtn").onclick = () => {
-    document.getElementById("filter-specialization").value = "";
-    document.getElementById("filter-location").value = "";
-    loadDoctors();
-  };
-}
-
-window.bookDoctor = function (doctorId) {
-  if (!getToken()) {
-    alert("Please log in first");
+// ------------------ DASHBOARD ------------------
+async function loadDashboard() {
+  const user = getUser();
+  if (!user) {
     window.location.href = "login.html";
     return;
   }
-  window.location.href = `book.html?doctorId=${doctorId}`;
-};
 
-// ----------- DASHBOARD -----------
-if (document.getElementById("userInfo")) {
-  (async () => {
-    if (!getToken()) {
-      window.location.href = "login.html";
-      return;
-    }
-    const res = await fetch(`${API_BASE}/auth/me`, {
-      headers: { Authorization: "Bearer " + getToken() }
+  document.getElementById("userInfo").innerHTML = `
+    <p><b>Name:</b> ${user.firstName} ${user.lastName}</p>
+    <p><b>Email:</b> ${user.email}</p>
+    <p><b>Role:</b> ${user.role}</p>
+  `;
+
+  const appointmentsDiv = document.getElementById("appointments");
+  try {
+    const res = await fetch(`${API_BASE}/appointment/my`, {
+      headers: { Authorization: `Bearer ${getToken()}` }
     });
-    const user = await res.json();
+    const data = await res.json();
+    appointmentsDiv.innerHTML = "";
 
-    document.getElementById("userInfo").innerHTML = `
-      <p><b>Name:</b> ${user.firstName} ${user.lastName}</p>
-      <p><b>Email:</b> ${user.email}</p>
-      <p><b>Role:</b> ${user.role}</p>
-    `;
-
-    if (user.role === "Farmer") {
-      document.getElementById("farmerDashboard").style.display = "block";
-      loadFarmerAppointments();
-    } else if (user.role === "Doctor") {
-      document.getElementById("doctorDashboard").style.display = "block";
-      loadDoctorAppointments();
-      setupAvailabilityForm();
-    } else if (user.role === "Admin") {
-      document.getElementById("adminDashboard").style.display = "block";
-      loadAdminData();
-    }
-  })();
-}
-
-async function loadFarmerAppointments() {
-  const res = await fetch(`${API_BASE}/appointment/mine`, {
-    headers: { Authorization: "Bearer " + getToken() }
-  });
-  const appts = await res.json();
-  const container = document.getElementById("appointments");
-  container.innerHTML = "";
-  appts.forEach(a => {
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `
-      <p><b>Doctor:</b> ${a.doctor?.firstName || ""} ${a.doctor?.lastName || ""}</p>
-      <p><b>Date:</b> ${new Date(a.date).toLocaleString()}</p>
-      <p><b>Type:</b> ${a.type}</p>
-      <p><b>Status:</b> ${a.status}</p>
-    `;
-    container.appendChild(div);
-  });
-}
-
-async function loadDoctorAppointments() {
-  const res = await fetch(`${API_BASE}/appointment/doctor`, {
-    headers: { Authorization: "Bearer " + getToken() }
-  });
-  const appts = await res.json();
-  const container = document.getElementById("doctorAppointments");
-  container.innerHTML = "";
-  appts.forEach(a => {
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `
-      <p><b>Farmer:</b> ${a.farmer?.firstName || ""} ${a.farmer?.lastName || ""}</p>
-      <p><b>Date:</b> ${new Date(a.date).toLocaleString()}</p>
-      <p><b>Type:</b> ${a.type}</p>
-      <p><b>Status:</b> ${a.status}</p>
-    `;
-    container.appendChild(div);
-  });
-}
-
-function setupAvailabilityForm() {
-  const form = document.getElementById("availabilityForm");
-  if (form) {
-    form.addEventListener("submit", async e => {
-      e.preventDefault();
-      const slots = document
-        .getElementById("slots")
-        .value.split(",")
-        .map(s => s.trim());
-      await fetch(`${API_BASE}/doctor/availability`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + getToken()
-        },
-        body: JSON.stringify({ slots })
-      });
-      alert("Slots saved!");
+    data.forEach(appt => {
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = `
+        <p><b>Doctor:</b> ${appt.doctor?.firstName || ""} ${appt.doctor?.lastName || ""}</p>
+        <p><b>Type:</b> ${appt.type}</p>
+        <p><b>Status:</b> ${appt.status}</p>
+        <p><b>Date:</b> ${appt.date || "-"}</p>
+        <p><b>Time:</b> ${appt.time || "-"}</p>
+      `;
+      appointmentsDiv.appendChild(div);
     });
+  } catch (err) {
+    console.error("Error loading appointments", err);
   }
 }
 
-async function loadAdminData() {
-  const userRes = await fetch(`${API_BASE}/admin/users`, {
-    headers: { Authorization: "Bearer " + getToken() }
-  });
-  const users = await userRes.json();
-  const uCont = document.getElementById("users");
-  uCont.innerHTML = "";
-  users.forEach(u => {
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `<p>${u.firstName} ${u.lastName} (${u.role})</p>`;
-    uCont.appendChild(div);
+// ------------------ BOOKING PAGE ------------------
+async function initBooking() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const doctorId = urlParams.get("doctorId");
+  if (!doctorId) {
+    alert("No doctor selected");
+    window.location.href = "index.html";
+    return;
+  }
+
+  const doctorCard = document.getElementById("doctorCard");
+  const appointmentType = document.getElementById("appointmentType");
+  const onlineFields = document.getElementById("onlineFields");
+  const inPersonFields = document.getElementById("inPersonFields");
+  const timeSlotSelect = document.getElementById("timeSlot");
+  const bookForm = document.getElementById("bookForm");
+  const bookMsg = document.getElementById("bookMsg");
+
+  // fetch doctor info
+  try {
+    const res = await fetch(`${API_BASE}/doctor/${doctorId}`);
+    const doc = await res.json();
+    doctorCard.innerHTML = `
+      <h2>Dr. ${doc.firstName} ${doc.lastName}</h2>
+      <p><b>Specialization:</b> ${doc.specialization || "General"}</p>
+      <p><b>Location:</b> ${doc.district}, ${doc.state}</p>
+      <p><b>Online Fee:</b> ₹${doc.feesTeleconsult || "-"}</p>
+      <p><b>Visit Fee:</b> ₹${doc.feesVisit || "-"}</p>
+    `;
+
+    // mock slots (replace with backend slots if available)
+    timeSlotSelect.innerHTML = `
+      <option value="9:00-9:30">9:00 - 9:30 AM</option>
+      <option value="10:00-10:30">10:00 - 10:30 AM</option>
+      <option value="11:00-11:30">11:00 - 11:30 AM</option>
+    `;
+  } catch (err) {
+    console.error("Error loading doctor info", err);
+  }
+
+  // toggle fields
+  appointmentType.addEventListener("change", () => {
+    if (appointmentType.value === "Online") {
+      onlineFields.style.display = "block";
+      inPersonFields.style.display = "none";
+    } else if (appointmentType.value === "InPerson") {
+      inPersonFields.style.display = "block";
+      onlineFields.style.display = "none";
+    } else {
+      onlineFields.style.display = "none";
+      inPersonFields.style.display = "none";
+    }
   });
 
-  const apptRes = await fetch(`${API_BASE}/admin/appointments`, {
-    headers: { Authorization: "Bearer " + getToken() }
-  });
-  const appts = await apptRes.json();
-  const aCont = document.getElementById("allAppointments");
-  aCont.innerHTML = "";
-  appts.forEach(a => {
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `<p>${a.farmer?.firstName} with ${a.doctor?.firstName} - ${a.status}</p>`;
-    aCont.appendChild(div);
+  // submit form
+  bookForm.addEventListener("submit", async e => {
+    e.preventDefault();
+    const type = appointmentType.value;
+    let body = { doctorId, type };
+
+    if (type === "Online") {
+      body.time = timeSlotSelect.value;
+    } else {
+      body.date = document.getElementById("visitDate").value;
+      body.time = document.getElementById("visitTime").value;
+      body.animalType = document.getElementById("animalType").value;
+      body.symptoms = document.getElementById("symptoms").value;
+      body.village = document.getElementById("village").value;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/appointment/book`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`
+        },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        bookMsg.textContent = "Appointment booked successfully!";
+        bookForm.reset();
+      } else {
+        bookMsg.textContent = data.message || "Booking failed";
+        bookMsg.style.color = "red";
+      }
+    } catch (err) {
+      bookMsg.textContent = "Error connecting to server";
+      bookMsg.style.color = "red";
+    }
   });
 }
