@@ -1,5 +1,5 @@
 const API_URL = "https://vetplat-backend.onrender.com";
-async function api(path, opts){ const res = await fetch(API+path, opts); return res.json(); }
+async function api(path, opts){ const res = await fetch(API_URL+path, opts); return res.json(); }
 // index page logic
 async function loadDoctors(specialization, location){
   const q = new URLSearchParams();
