@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "./config";
+import { API_BASE_URL } from "./config.js";
 
 export async function api(endpoint, method = "GET", body = null, auth = false) {
   const headers = { "Content-Type": "application/json" };
@@ -15,8 +15,8 @@ export async function api(endpoint, method = "GET", body = null, auth = false) {
   });
 
   if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(errText || "API Error");
+    const text = await res.text();
+    throw new Error(text || "API error");
   }
 
   return res.json();
