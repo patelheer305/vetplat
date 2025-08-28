@@ -1,9 +1,179 @@
 <!doctype html>
-<html><head><meta charset="utf-8"/><title>Dashboard</title><link rel="stylesheet" href="style.css" /></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Dashboard - VetConnect</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
 <body>
-<div class="topbar"><h1>VetConnect</h1><nav><a href="index.html">Home</a><a href="#" id="nav-user"></a></nav></div>
-<div class="container">
-  <div id="dashboardContent"></div>
-</div>
-<script src="app.js"></script>
-</body></html>
+  <div class="topbar">
+    <h1>VetConnect</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <span id="nav-auth"></span>
+    </nav>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>Welcome, <span id="userName"></span></h2>
+      <p>Role: <span id="userRole"></span></p>
+    </div>
+
+    <!-- Farmer Section -->
+    <div id="farmerSection" style="display:none;">
+      <div class="card">
+        <h3>Available Doctors</h3>
+        <div id="doctorList"></div>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <h3>My Appointments</h3>
+        <div id="myAppointments"></div>
+      </div>
+    </div>
+
+    <!-- Doctor Section -->
+    <div id="doctorSection" style="display:none;">
+      <div class="card">
+        <h3>My Incoming Appointments</h3>
+        <div id="doctorAppointments"></div>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <h3>Set My Availability</h3>
+        <form id="availabilityForm" style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="availableDate" placeholder="Date (YYYY-MM-DD)" required />
+          <input type="text" id="availableTime" placeholder="Time (e.g. 5 PM)" required />
+          <button type="submit">Add</button>
+        </form>
+        <div id="myAvailability" style="margin-top:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module">
+    import { API_BASE } from "./config.js";
+    import "./navbar.js";
+
+    const user = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token");
+
+    if (!user || !token) {
+      window.location.href = "login.html";
+    }
+
+    // Set user info
+    document.getElementById("userName").textContent = user.firstName + " " + user.lastName;
+    document.getElementById("userRole").textContent = user.role;
+
+    const farmerSection = document.getElementById("farmerSection");
+    const doctorSection = document.getElementById("doctorSection");
+
+    if (user.role === "Farmer") {
+      farmerSection.style.display = "block";
+      loadDoctors();
+      loadFarmerAppointments();
+    } else if (user.role === "Doctor") {
+      doctorSection.style.display = "block";
+      loadDoctorAppointments();
+      loadAvailability();
+    }
+
+    // ---------------- Farmer Functions ----------------
+    async function loadDoctors() {
+      const res = await fetch(`${API_BASE}/doctors`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const doctors = await res.json();
+      const list = document.getElementById("doctorList");
+      list.innerHTML = doctors.map(doc => `
+        <div class="card" style="margin:8px 0;">
+          <b>${doc.firstName} ${doc.lastName}</b> (${doc.specialization || "General"}) <br>
+          Fees: ₹${doc.feesTeleconsult || 0} (Online), ₹${doc.feesVisit || 0} (Visit) <br>
+          <button onclick="book('${doc._id}')">Book Appointment</button>
+        </div>
+      `).join("");
+    }
+
+    async function loadFarmerAppointments() {
+      const res = await fetch(`${API_BASE}/appointments/my`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const appts = await res.json();
+      const div = document.getElementById("myAppointments");
+      div.innerHTML = appts.length ? appts.map(a => `
+        <div class="card" style="margin:6px 0;">
+          Doctor: ${a.doctorName} <br>
+          Date: ${a.date} | Time: ${a.time} <br>
+          Status: ${a.status}
+        </div>
+      `).join("") : "<p>No appointments yet.</p>";
+    }
+
+    window.book = async function(doctorId) {
+      const date = prompt("Enter appointment date (YYYY-MM-DD):");
+      const time = prompt("Enter appointment time (e.g. 5 PM):");
+      if (!date || !time) return;
+
+      const res = await fetch(`${API_BASE}/appointments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ doctorId, date, time })
+      });
+
+      if (res.ok) {
+        alert("Appointment booked!");
+        loadFarmerAppointments();
+      } else {
+        alert("Booking failed.");
+      }
+    }
+
+    // ---------------- Doctor Functions ----------------
+    async function loadDoctorAppointments() {
+      const res = await fetch(`${API_BASE}/appointments/incoming`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const appts = await res.json();
+      const div = document.getElementById("doctorAppointments");
+      div.innerHTML = appts.length ? appts.map(a => `
+        <div class="card" style="margin:6px 0;">
+          Farmer: ${a.farmerName} <br>
+          Date: ${a.date} | Time: ${a.time} <br>
+          Status: ${a.status}
+        </div>
+      `).join("") : "<p>No appointments yet.</p>";
+    }
+
+    async function loadAvailability() {
+      const res = await fetch(`${API_BASE}/availability/my`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const slots = await res.json();
+      const div = document.getElementById("myAvailability");
+      div.innerHTML = slots.length ? slots.map(s => `
+        <div>${s.date} at ${s.time}</div>
+      `).join("") : "<p>No availability set.</p>";
+    }
+
+    document.getElementById("availabilityForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const date = document.getElementById("availableDate").value;
+      const time = document.getElementById("availableTime").value;
+
+      const res = await fetch(`${API_BASE}/availability`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ date, time })
+      });
+
+      if (res.ok) {
+        loadAvailability();
+        e.target.reset();
+      } else {
+        alert("Failed to save availability.");
+      }
+    });
+  </script>
+</body>
+</html>
