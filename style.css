@@ -1,0 +1,21 @@
+/* UI provided by user */
+:root{--accent:#2b7a78;--muted:#666}
+body{font-family:Inter,system-ui,Segoe UI,Arial;line-height:1.4;margin:0;background:#f4f6f8;color:#222}
+.topbar{background:var(--accent);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
+.topbar h1{margin:0;font-size:20px}
+.topbar nav a{color:#fff;margin-left:12px;text-decoration:none}
+.container{padding:20px;max-width:1000px;margin:18px auto}
+.card{background:#fff;padding:16px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.06)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card-doctor{border:1px solid #e6e6e6;padding:12px;border-radius:8px;background:#fff}
+.row{display:flex;gap:8px;align-items:center;margin-top:8px}
+input,textarea,select{padding:8px;border-radius:6px;border:1px solid #ddd;width:100%;box-sizing:border-box;margin-bottom:10px}
+button{background:var(--accent);color:#fff;padding:8px 12px;border:0;border-radius:6px;cursor:pointer}
+button.secondary{background:#666}
+.muted{color:var(--muted);margin-top:8px}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{padding:8px;border-bottom:1px solid #eee;text-align:left}
+.small{font-size:13px;color:var(--muted)}
+pre{white-space:pre-wrap;word-break:break-word}
+.card-doctor .meta{font-size:14px;color:var(--muted);margin-top:6px}
+.card-doctor .fees{margin-top:8px;font-weight:600}
