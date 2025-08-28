@@ -1,4 +1,4 @@
-const API = (window.location.hostname === 'localhost' || window.location.hostname==='127.0.0.1') ? 'http://localhost:5000' : `${window.location.protocol}//${window.location.hostname}:5000`;
+const API_URL = "https://vetplat-backend.onrender.com";
 async function api(path, opts){ const res = await fetch(API+path, opts); return res.json(); }
 // index page logic
 async function loadDoctors(specialization, location){
