@@ -1,29 +1,39 @@
 <!doctype html>
 <html>
-<head><meta charset="utf-8"/><title>Book</title><link rel="stylesheet" href="style.css" /></head>
+<head>
+  <meta charset="utf-8"/>
+  <title>Book Appointment - VetConnect</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
 <body>
-<div class="topbar"><h1>VetConnect</h1><nav><a href="index.html">Home</a></nav></div>
-<div class="container">
-  <div class="card" style="max-width:700px;margin:0 auto;">
-    <h2>Book Appointment</h2>
-    <form id="bookForm">
-      <label>Select Doctor</label>
-      <select id="doctorSelect"></select>
-      <label>Mode</label>
-      <select id="mode">
-        <option value="Online">Online</option>
-        <option value="In-person">In-person</option>
-      </select>
-      <label>Animal Type</label>
-      <input id="animalType" placeholder="Cow, Goat, Poultry..." />
-      <label>Symptoms / Details</label>
-      <textarea id="symptoms"></textarea>
-      <label>Date (for Online show available slots after selecting date)</label>
-      <input id="date" type="date" />
-      <div id="slots"></div>
-      <button type="submit">Submit</button>
-    </form>
+  <div class="topbar">
+    <h1>VetConnect</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="#" id="logoutBtn">Logout</a>
+    </nav>
   </div>
-</div>
-<script src="app.js"></script>
-</body></html>
+
+  <div class="container">
+    <div class="card" style="max-width:500px;margin:0 auto;">
+      <h2>Book Appointment</h2>
+      <form id="bookForm">
+        <input type="hidden" id="doctorId">
+        <p id="doctorInfo"></p>
+
+        <label>Date</label>
+        <input type="date" id="date" required />
+
+        <label>Time</label>
+        <input type="time" id="time" required />
+
+        <button type="submit">Book</button>
+      </form>
+      <p id="bookMsg"></p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
