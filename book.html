@@ -16,70 +16,37 @@
   </div>
 
   <div class="container">
-    <h2>Book Appointment</h2>
-    <div id="doctorInfo" class="card"></div>
+    <div id="doctorCard" class="card"></div>
 
-    <form id="bookForm" class="form">
-      <label for="date">Date:</label>
-      <input type="date" id="date" required/>
+    <div class="card" style="margin-top:16px; max-width:600px;">
+      <h2>Book Appointment</h2>
+      <form id="bookForm">
+        <label>Appointment Type:</label>
+        <select id="appointmentType" required>
+          <option value="">Select</option>
+          <option value="Online">Online Consultation</option>
+          <option value="InPerson">In-Person Visit</option>
+        </select>
 
-      <label for="time">Time:</label>
-      <input type="time" id="time" required/>
+        <div id="onlineFields" style="display:none; margin-top:12px;">
+          <label>Select Time Slot:</label>
+          <select id="timeSlot"></select>
+        </div>
 
-      <button type="submit">Confirm Booking</button>
-    </form>
-    <p id="message"></p>
+        <div id="inPersonFields" style="display:none; margin-top:12px;">
+          <input type="date" id="visitDate" required />
+          <input type="time" id="visitTime" required />
+          <input type="text" id="animalType" placeholder="Animal Type" required />
+          <textarea id="symptoms" placeholder="Symptoms" required></textarea>
+          <input type="text" id="village" placeholder="Village" required />
+        </div>
+
+        <button type="submit" style="margin-top:16px;">Confirm Booking</button>
+      </form>
+      <p id="bookMsg" style="color:green;"></p>
+    </div>
   </div>
 
   <script src="app.js"></script>
-  <script>
-    const API_BASE = "https://your-backend.onrender.com/api"; // update to your backend URL
-    const token = localStorage.getItem("token");
-    const doctorId = localStorage.getItem("selectedDoctorId");
-
-    if (!token) {
-      window.location = "login.html";
-    }
-
-    // Load doctor info
-    async function loadDoctor() {
-      const res = await fetch(`${API_BASE}/doctors/${doctorId}`);
-      const doctor = await res.json();
-
-      document.getElementById("doctorInfo").innerHTML = `
-        <h3>${doctor.name}</h3>
-        <p><b>Specialization:</b> ${doctor.specialization || "N/A"}</p>
-        <p><b>Location:</b> ${doctor.location || "N/A"}</p>
-        <p><b>Teleconsult Fee:</b> ₹${doctor.feesTeleconsult || "-"}</p>
-        <p><b>Visit Fee:</b> ₹${doctor.feesVisit || "-"}</p>
-      `;
-    }
-    loadDoctor();
-
-    // Handle booking
-    document.getElementById("bookForm").addEventListener("submit", async e => {
-      e.preventDefault();
-      const date = document.getElementById("date").value;
-      const time = document.getElementById("time").value;
-
-      const res = await fetch(`${API_BASE}/appointments`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ doctorId, date, time })
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        document.getElementById("message").textContent = "Appointment booked successfully!";
-        localStorage.removeItem("selectedDoctorId");
-        setTimeout(() => (window.location = "dashboard.html"), 1500);
-      } else {
-        document.getElementById("message").textContent = data.message || "Booking failed";
-      }
-    });
-  </script>
 </body>
 </html>
