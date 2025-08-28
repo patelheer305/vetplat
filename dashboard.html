@@ -10,24 +10,43 @@
     <h1>VetConnect</h1>
     <nav>
       <a href="index.html">Home</a>
+      <span id="navUser"></span>
       <a href="#" id="logoutBtn">Logout</a>
     </nav>
   </div>
 
   <div class="container">
-    <h2>Dashboard</h2>
+    <h2 id="dashboardTitle">Dashboard</h2>
+
+    <!-- User profile -->
     <div id="userInfo" class="card"></div>
 
-    <!-- Section for Farmers -->
-    <div id="farmerSection" style="display:none;">
+    <!-- Farmer Dashboard -->
+    <div id="farmerDashboard" style="display:none">
       <h3>Your Appointments</h3>
       <div id="appointments" class="cards"></div>
     </div>
 
-    <!-- Section for Doctors -->
-    <div id="doctorSection" style="display:none;">
-      <h3>Appointment Requests</h3>
+    <!-- Doctor Dashboard -->
+    <div id="doctorDashboard" style="display:none">
+      <h3>Manage Availability</h3>
+      <form id="availabilityForm" class="card">
+        <label>Available Time Slots (comma separated):</label>
+        <input type="text" id="slots" placeholder="e.g. 10:00-11:00, 15:00-16:00">
+        <button type="submit">Save Slots</button>
+      </form>
+
+      <h3>In-Person Appointment Requests</h3>
       <div id="doctorAppointments" class="cards"></div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" style="display:none">
+      <h3>Manage Users</h3>
+      <div id="users" class="cards"></div>
+
+      <h3>Manage Appointments</h3>
+      <div id="allAppointments" class="cards"></div>
     </div>
   </div>
 
