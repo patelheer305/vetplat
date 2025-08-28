@@ -16,24 +16,70 @@
   </div>
 
   <div class="container">
-    <div class="card" style="max-width:500px;margin:0 auto;">
-      <h2>Book Appointment</h2>
-      <form id="bookForm">
-        <input type="hidden" id="doctorId">
-        <p id="doctorInfo"></p>
+    <h2>Book Appointment</h2>
+    <div id="doctorInfo" class="card"></div>
 
-        <label>Date</label>
-        <input type="date" id="date" required />
+    <form id="bookForm" class="form">
+      <label for="date">Date:</label>
+      <input type="date" id="date" required/>
 
-        <label>Time</label>
-        <input type="time" id="time" required />
+      <label for="time">Time:</label>
+      <input type="time" id="time" required/>
 
-        <button type="submit">Book</button>
-      </form>
-      <p id="bookMsg"></p>
-    </div>
+      <button type="submit">Confirm Booking</button>
+    </form>
+    <p id="message"></p>
   </div>
 
   <script src="app.js"></script>
+  <script>
+    const API_BASE = "https://your-backend.onrender.com/api"; // update to your backend URL
+    const token = localStorage.getItem("token");
+    const doctorId = localStorage.getItem("selectedDoctorId");
+
+    if (!token) {
+      window.location = "login.html";
+    }
+
+    // Load doctor info
+    async function loadDoctor() {
+      const res = await fetch(`${API_BASE}/doctors/${doctorId}`);
+      const doctor = await res.json();
+
+      document.getElementById("doctorInfo").innerHTML = `
+        <h3>${doctor.name}</h3>
+        <p><b>Specialization:</b> ${doctor.specialization || "N/A"}</p>
+        <p><b>Location:</b> ${doctor.location || "N/A"}</p>
+        <p><b>Teleconsult Fee:</b> ₹${doctor.feesTeleconsult || "-"}</p>
+        <p><b>Visit Fee:</b> ₹${doctor.feesVisit || "-"}</p>
+      `;
+    }
+    loadDoctor();
+
+    // Handle booking
+    document.getElementById("bookForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const date = document.getElementById("date").value;
+      const time = document.getElementById("time").value;
+
+      const res = await fetch(`${API_BASE}/appointments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ doctorId, date, time })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        document.getElementById("message").textContent = "Appointment booked successfully!";
+        localStorage.removeItem("selectedDoctorId");
+        setTimeout(() => (window.location = "dashboard.html"), 1500);
+      } else {
+        document.getElementById("message").textContent = data.message || "Booking failed";
+      }
+    });
+  </script>
 </body>
 </html>
