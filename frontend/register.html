@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"/><title>Register</title><link rel="stylesheet" href="style.css" /></head>
+<body>
+<div class="topbar">
+  <h1>VetConnect</h1>
+  <nav><a href="index.html">Home</a></nav>
+</div>
+<div class="container">
+  <div class="card" style="max-width:600px;margin:0 auto;">
+    <h2>Create Account</h2>
+    <form id="registerForm">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <input id="firstName" placeholder="First name" required />
+        <input id="lastName" placeholder="Last name" required />
+      </div>
+      <input id="village" placeholder="Village" />
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <input id="tehsil" placeholder="Tehsil" />
+        <input id="district" placeholder="District" />
+      </div>
+      <input id="state" placeholder="State" />
+      <input id="mobile" placeholder="Mobile number" />
+      <input id="email" type="email" placeholder="Email" required />
+      <input id="password" type="password" placeholder="Password" required />
+      <select id="role">
+        <option value="Farmer">Farmer</option>
+        <option value="Doctor">Doctor</option>
+      </select>
+      <div id="doctorExtra" style="display:none">
+        <input id="specialization" placeholder="Specialization" />
+        <div style="display:flex;gap:8px">
+          <input id="feesTeleconsult" type="number" placeholder="Online fee (₹)" />
+          <input id="feesVisit" type="number" placeholder="Visit fee (₹)" />
+        </div>
+      </div>
+      <button type="submit">Register</button>
+    </form>
+  </div>
+</div>
+<script src="app.js"></script>
+</body></html>

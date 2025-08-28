@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"/><title>Book</title><link rel="stylesheet" href="style.css" /></head>
+<body>
+<div class="topbar"><h1>VetConnect</h1><nav><a href="index.html">Home</a></nav></div>
+<div class="container">
+  <div class="card" style="max-width:700px;margin:0 auto;">
+    <h2>Book Appointment</h2>
+    <form id="bookForm">
+      <label>Select Doctor</label>
+      <select id="doctorSelect"></select>
+      <label>Mode</label>
+      <select id="mode">
+        <option value="Online">Online</option>
+        <option value="In-person">In-person</option>
+      </select>
+      <label>Animal Type</label>
+      <input id="animalType" placeholder="Cow, Goat, Poultry..." />
+      <label>Symptoms / Details</label>
+      <textarea id="symptoms"></textarea>
+      <label>Date (for Online show available slots after selecting date)</label>
+      <input id="date" type="date" />
+      <div id="slots"></div>
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+</div>
+<script src="app.js"></script>
+</body></html>
