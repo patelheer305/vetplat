@@ -1,18 +1,48 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <title>Vet Platform - Home</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    .user-menu {
+      position: relative;
+      display: inline-block;
+    }
+    .dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: #fff;
+      border: 1px solid #ddd;
+      min-width: 150px;
+      z-index: 1000;
+    }
+    .dropdown a {
+      display: block;
+      padding: 8px 12px;
+      text-decoration: none;
+      color: #333;
+    }
+    .dropdown a:hover {
+      background: #f0f0f0;
+    }
+    .user-menu:hover .dropdown {
+      display: block;
+    }
+  </style>
 </head>
 <body>
   <div class="topbar">
     <h1>VetConnect</h1>
     <nav>
       <a href="index.html">Home</a>
-      <a href="login.html" id="nav-auth">Log In / Register</a>
+      <!-- Dynamic Nav -->
+      <span id="nav-auth"></span>
     </nav>
   </div>
+
   <div class="container">
     <div class="card">
       <div style="display:flex;gap:12px;align-items:center;">
@@ -24,6 +54,9 @@
     </div>
     <div id="doctors" class="cards" style="margin-top:16px;"></div>
   </div>
+
+  <!-- Scripts -->
+  <script type="module" src="navbar.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
