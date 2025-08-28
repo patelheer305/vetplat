@@ -1,31 +1,101 @@
-// ====== CONFIG ======
-const API_BASE = "https://your-backend.onrender.com/api"; // change to your Render backend URL
+// ================== CONFIG ==================
+const API_BASE = "https://your-backend.onrender.com/api"; // update with your Render backend URL
 
-// ====== NAVBAR SESSION HANDLING ======
-function setupNavbar() {
+// ================== NAVBAR HANDLING ==================
+function updateNavbar() {
   const navAuth = document.getElementById("nav-auth");
-  if (!navAuth) return;
+  const logoutBtn = document.getElementById("logoutBtn");
 
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
 
-  if (token) {
-    navAuth.innerText = "Logout";
-    navAuth.href = "#";
-    navAuth.onclick = () => {
-      localStorage.clear();
-      window.location = "index.html";
-    };
-  } else {
-    navAuth.innerText = "Log In / Register";
-    navAuth.href = "login.html";
+  if (navAuth) {
+    if (token) {
+      navAuth.textContent = "Dashboard";
+      navAuth.href = "dashboard.html";
+    } else {
+      navAuth.textContent = "Log In / Register";
+      navAuth.href = "login.html";
+    }
+  }
+
+  if (logoutBtn) {
+    if (token) {
+      logoutBtn.style.display = "inline";
+      logoutBtn.addEventListener("click", () => {
+        localStorage.clear();
+        window.location = "index.html";
+      });
+    } else {
+      logoutBtn.style.display = "none";
+    }
   }
 }
-setupNavbar();
+updateNavbar();
 
-// ====== LOGIN PAGE ======
-if (document.getElementById("loginForm")) {
-  document.getElementById("loginForm").onsubmit = async e => {
+// ================== INDEX PAGE (doctor list + book) ==================
+async function loadDoctors() {
+  if (!document.getElementById("doctors")) return;
+
+  const res = await fetch(`${API_BASE}/doctors`);
+  const doctors = await res.json();
+
+  renderDoctors(doctors);
+
+  document.getElementById("searchBtn").addEventListener("click", () => {
+    const spec = document.getElementById("filter-specialization").value.toLowerCase();
+    const loc = document.getElementById("filter-location").value.toLowerCase();
+    const filtered = doctors.filter(
+      d =>
+        (!spec || (d.specialization || "").toLowerCase().includes(spec)) &&
+        (!loc || (d.location || "").toLowerCase().includes(loc))
+    );
+    renderDoctors(filtered);
+  });
+
+  document.getElementById("clearBtn").addEventListener("click", () => {
+    document.getElementById("filter-specialization").value = "";
+    document.getElementById("filter-location").value = "";
+    renderDoctors(doctors);
+  });
+}
+
+function renderDoctors(doctors) {
+  const container = document.getElementById("doctors");
+  container.innerHTML = "";
+  if (!doctors.length) {
+    container.innerHTML = "<p>No doctors found.</p>";
+    return;
+  }
+
+  doctors.forEach(d => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <h3>${d.name}</h3>
+      <p><b>Specialization:</b> ${d.specialization || "N/A"}</p>
+      <p><b>Location:</b> ${d.location || "N/A"}</p>
+      <p><b>Teleconsult Fee:</b> ₹${d.feesTeleconsult || "-"}</p>
+      <p><b>Visit Fee:</b> ₹${d.feesVisit || "-"}</p>
+      <button class="bookBtn" data-id="${d._id}">Book</button>
+    `;
+    container.appendChild(card);
+  });
+
+  document.querySelectorAll(".bookBtn").forEach(btn => {
+    btn.addEventListener("click", e => {
+      const doctorId = e.target.dataset.id;
+      localStorage.setItem("selectedDoctorId", doctorId);
+      window.location = "book.html";
+    });
+  });
+}
+loadDoctors();
+
+// ================== LOGIN PAGE ==================
+const loginForm = document.getElementById("loginForm");
+if (loginForm) {
+  loginForm.addEventListener("submit", async e => {
     e.preventDefault();
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
@@ -39,26 +109,27 @@ if (document.getElementById("loginForm")) {
     const data = await res.json();
     if (res.ok) {
       localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.user.role);
-      localStorage.setItem("name", data.user.name);
+      localStorage.setItem("role", data.role);
+      localStorage.setItem("name", data.name);
       window.location = "dashboard.html";
     } else {
-      document.getElementById("error").innerText = data.message || "Login failed";
+      document.getElementById("error").textContent = data.message || "Login failed";
     }
-  };
+  });
 }
 
-// ====== REGISTER PAGE ======
-if (document.getElementById("registerForm")) {
+// ================== REGISTER PAGE ==================
+const registerForm = document.getElementById("registerForm");
+if (registerForm) {
   const roleSelect = document.getElementById("role");
-  roleSelect.onchange = () => {
-    document.getElementById("doctorExtra").style.display =
-      roleSelect.value === "Doctor" ? "block" : "none";
-  };
+  const doctorExtra = document.getElementById("doctorExtra");
 
-  document.getElementById("registerForm").onsubmit = async e => {
+  roleSelect.addEventListener("change", () => {
+    doctorExtra.style.display = roleSelect.value === "Doctor" ? "block" : "none";
+  });
+
+  registerForm.addEventListener("submit", async e => {
     e.preventDefault();
-
     const payload = {
       firstName: document.getElementById("firstName").value,
       lastName: document.getElementById("lastName").value,
@@ -69,10 +140,10 @@ if (document.getElementById("registerForm")) {
       mobile: document.getElementById("mobile").value,
       email: document.getElementById("email").value,
       password: document.getElementById("password").value,
-      role: document.getElementById("role").value
+      role: roleSelect.value
     };
 
-    if (payload.role === "Doctor") {
+    if (roleSelect.value === "Doctor") {
       payload.specialization = document.getElementById("specialization").value;
       payload.feesTeleconsult = document.getElementById("feesTeleconsult").value;
       payload.feesVisit = document.getElementById("feesVisit").value;
@@ -86,105 +157,66 @@ if (document.getElementById("registerForm")) {
 
     const data = await res.json();
     if (res.ok) {
-      alert("Registration successful. Please login.");
+      alert("Registration successful! Please log in.");
       window.location = "login.html";
     } else {
       alert(data.message || "Registration failed");
     }
-  };
+  });
 }
 
-// ====== INDEX PAGE: SEARCH DOCTORS ======
-async function initIndexPage() {
-  if (!document.getElementById("doctors")) return;
+// ================== DASHBOARD PAGE ==================
+async function initDashboard() {
+  if (!document.getElementById("appointments")) return;
 
-  async function loadDoctors() {
-    const spec = document.getElementById("filter-specialization").value;
-    const loc = document.getElementById("filter-location").value;
-
-    let url = `${API_BASE}/doctors`;
-    const params = [];
-    if (spec) params.push(`specialization=${spec}`);
-    if (loc) params.push(`location=${loc}`);
-    if (params.length) url += "?" + params.join("&");
-
-    const res = await fetch(url);
-    const docs = await res.json();
-
-    const container = document.getElementById("doctors");
-    container.innerHTML = "";
-
-    docs.forEach(doc => {
-      const card = document.createElement("div");
-      card.className = "card";
-      card.innerHTML = `
-        <h3>${doc.name}</h3>
-        <p>${doc.specialization || ""}</p>
-        <p><b>Online Fee:</b> ₹${doc.feesTeleconsult || "-"}</p>
-        <button onclick="window.location='book.html?doctor=${doc._id}'">Book Appointment</button>
-      `;
-      container.appendChild(card);
-    });
-  }
-
-  document.getElementById("searchBtn").onclick = loadDoctors;
-  document.getElementById("clearBtn").onclick = () => {
-    document.getElementById("filter-specialization").value = "";
-    document.getElementById("filter-location").value = "";
-    loadDoctors();
-  };
-
-  loadDoctors();
-}
-initIndexPage();
-
-// ====== BOOKING PAGE ======
-async function initBookingPage() {
-  if (!document.getElementById("bookForm")) return;
-
-  const params = new URLSearchParams(window.location.search);
-  const doctorId = params.get("doctor");
   const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
+  const name = localStorage.getItem("name");
 
   if (!token) return (window.location = "login.html");
-  if (!doctorId) {
-    document.getElementById("doctorInfo").innerText = "No doctor selected";
+
+  // show user info
+  document.getElementById("userInfo").innerHTML = `
+    <p><b>Name:</b> ${name}</p>
+    <p><b>Role:</b> ${role}</p>
+  `;
+
+  // fetch appointments
+  const res = await fetch(`${API_BASE}/appointments`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  const appts = await res.json();
+  const container = document.getElementById("appointments");
+  container.innerHTML = "";
+
+  if (!appts.length) {
+    container.innerHTML = "<p>No appointments found.</p>";
     return;
   }
 
-  document.getElementById("doctorId").value = doctorId;
+  appts.forEach(a => {
+    const card = document.createElement("div");
+    card.className = "card";
 
-  // Fetch doctor details
-  const res = await fetch(`${API_BASE}/doctors/${doctorId}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  const doc = await res.json();
-
-  document.getElementById("doctorInfo").innerHTML =
-    `<b>${doc.name}</b> (${doc.specialization}) - Online fee ₹${doc.feesTeleconsult}`;
-
-  // Submit booking
-  document.getElementById("bookForm").onsubmit = async e => {
-    e.preventDefault();
-    const date = document.getElementById("date").value;
-    const time = document.getElementById("time").value;
-
-    const res = await fetch(`${API_BASE}/appointments`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ doctorId, date, time })
-    });
-
-    if (res.ok) {
-      document.getElementById("bookMsg").innerText = "✅ Appointment booked successfully!";
-      setTimeout(() => (window.location = "dashboard.html"), 1500);
-    } else {
-      const err = await res.json();
-      document.getElementById("bookMsg").innerText = "❌ " + err.message;
+    if (role === "Farmer") {
+      card.innerHTML = `
+        <p><b>Doctor:</b> ${a.doctor?.name || "N/A"} (${a.doctor?.specialization || ""})</p>
+        <p><b>Date:</b> ${a.date}</p>
+        <p><b>Time:</b> ${a.time}</p>
+        <p><b>Status:</b> ${a.status}</p>
+      `;
+    } else if (role === "Doctor") {
+      card.innerHTML = `
+        <p><b>Farmer:</b> ${a.farmer?.firstName || ""} ${a.farmer?.lastName || ""}</p>
+        <p><b>Mobile:</b> ${a.farmer?.mobile || ""}</p>
+        <p><b>Date:</b> ${a.date}</p>
+        <p><b>Time:</b> ${a.time}</p>
+        <p><b>Status:</b> ${a.status}</p>
+      `;
     }
-  };
+
+    container.appendChild(card);
+  });
 }
-initBookingPage();
+initDashboard();
