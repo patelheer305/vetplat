@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>VetConnect - Home</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <h1>VetConnect</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="book.html" id="nav-book" style="display:none">Book</a>
+      <a href="login.html" id="nav-auth">Log In / Register</a>
+      <div id="nav-user-wrap" style="display:inline-block">
+        <a href="#" id="nav-user" style="display:none"></a>
+        <div id="nav-user-menu" class="card" style="display:none;position:absolute;right:20px;margin-top:8px;padding:8px;">
+          <a href="dashboard.html">Dashboard</a><br/>
+          <a href="#" id="logout">Sign out</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <input id="filter-specialization" placeholder="Specialization" />
+        <input id="filter-location" placeholder="District or State" />
+        <button id="searchBtn">Search</button>
+        <button id="clearBtn" class="secondary">Clear</button>
+      </div>
+    </div>
+
+    <div id="doctors" class="cards" style="margin-top:16px;"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

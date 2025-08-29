@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"/><title>Book Appointment - VetConnect</title><link rel="stylesheet" href="style.css" /></head>
+<body>
+<div class="topbar">
+  <h1>VetConnect</h1>
+  <nav><a href="index.html">Home</a><a href="dashboard.html" id="nav-dash-link" style="display:none">Dashboard</a></nav>
+</div>
+<div class="container">
+  <div class="card" style="max-width:720px;margin:0 auto;">
+    <h2>Book Appointment</h2>
+    <form id="bookForm">
+      <label>Mode</label>
+      <select id="mode">
+        <option value="Online">Online</option>
+        <option value="InPerson">In Person</option>
+      </select>
+
+      <label>Select Doctor</label>
+      <select id="doctorSelect"></select>
+
+      <div id="slotWrapper" style="display:block">
+        <label>Pick Date</label>
+        <input id="date" type="date" required />
+        <label>Pick Slot (online only)</label>
+        <select id="slotSelect"></select>
+      </div>
+
+      <label>Animal Type</label>
+      <input id="animalType" placeholder="e.g. Cow, Goat, Buffalo" required />
+
+      <label>Symptoms / Notes</label>
+      <textarea id="symptoms" rows="4" placeholder="Describe symptoms..." required></textarea>
+
+      <button type="submit">Create Request / Pay</button>
+    </form>
+    <div class="muted small" style="margin-top:8px;">If you are not logged in you'll be asked to login first. Online bookings require payment to confirm (payment flow is simulated).</div>
+  </div>
+</div>
+<script src="app.js"></script>
+</body></html>
